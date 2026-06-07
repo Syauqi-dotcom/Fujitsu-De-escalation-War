@@ -1,0 +1,79 @@
+[
+    {
+        "timestamp": "2026-06-06 03:30:00",
+        "file": "src/qulacs_vqe.py",
+        "type": "variable",
+        "name": "energy_history",
+        "reason": "Menyimpan riwayat penurunan nilai energi tiap iterasi optimasi VQE agar konvergensinya dapat divisualisasikan."
+    },
+    {
+        "timestamp": "2026-06-06 03:30:15",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "run_hea_vqe",
+        "reason": "Fungsi pembungkus untuk menjalankan optimasi VQE menggunakan Hardware-Efficient Ansatz (HEA), untuk eksperimen pembanding."
+    },
+    {
+        "timestamp": "2026-06-06 03:30:30",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "sample_hea_portfolios",
+        "reason": "Mengekstrak hasil bitstring terbaik dari Ansatz HEA setelah model VQE optimal."
+    },
+    {
+        "timestamp": "2026-06-06 03:39:23",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "run_hva_vqe",
+        "reason": "Fungsi utama untuk mengeksekusi optimasi VQE menggunakan Hardware-efficient Ansatz (HVA)."
+    },
+    {
+        "timestamp": "2026-06-06 03:39:23",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "sample_hva_portfolios",
+        "reason": "Melakukan sampling dari state kuantum (HVA) yang sudah dioptimasi untuk mendapatkan bitstring portofolio."
+    },
+    {
+        "timestamp": "2026-06-06 03:39:23",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "best_sampled_portfolios",
+        "reason": "Memfilter dan mengurutkan sampel bitstring untuk mendapatkan top K portofolio dengan nilai objektif terbaik."
+    },
+    {
+        "timestamp": "2026-06-06 03:39:23",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "build_observable",
+        "reason": "Membangun operator observable Hamiltonian Ising berdasarkan matriks tension dan interaksi."
+    },
+    {
+        "timestamp": "2026-06-06 03:40:06",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "build_hva_circuit",
+        "reason": "Membangun sirkuit kuantum berdasarkan arsitektur Hardware-efficient Ansatz (HVA)."
+    },
+    {
+        "timestamp": "2026-06-06 03:40:07",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "evaluate_energy_hva",
+        "reason": "Menghitung nilai ekspektasi (energi) dari sirkuit HVA terhadap observable."
+    },
+    {
+        "timestamp": "2026-06-06 03:40:07",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "build_hea_circuit",
+        "reason": "Membangun sirkuit kuantum dengan arsitektur HEA (Hardware Efficient Ansatz) standar."
+    },
+    {
+        "timestamp": "2026-06-06 03:40:07",
+        "file": "src/qulacs_vqe.py",
+        "type": "function",
+        "name": "evaluate_energy_hea",
+        "reason": "Menghitung nilai ekspektasi energi khusus untuk arsitektur HEA."
+    }
+]

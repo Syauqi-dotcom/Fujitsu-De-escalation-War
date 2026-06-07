@@ -1,0 +1,28 @@
+# 1. Parameter Generator Jaringan Geopolitik
+network_params:
+  n_blocks: 5
+  block_size: 6
+  p_in: 0.8
+  p_out: 0.25
+  p_neg: 0.7
+  j_in: [0.8, 1.2]
+  j_out: [0.2, 0.8]
+  j_out_pos: 0.2
+  seed: 123
+
+# 2. Parameter Skenario Stres/Ketegangan
+scenario_params:
+  delta_border: 1.0
+  delta_internal: 0.7
+
+# 3. Parameter Formulasi QUBO
+optimization_params:
+  budget: 15.0    # Target maksimal biaya aksi sipil (sesuaikan saat eksperimen)
+  eta: 2.0        # Bobot penalti untuk pelanggaran budget (soft constraint)
+
+# 4. Parameter Simulator Kuantum (QuLacs VQE)
+vqe_params:
+  gamma_tf: 0.2   # Kekuatan transverse field untuk eksplorasi state
+  depth: 2        # Kedalaman sirkuit ansatz (p)
+  seed: 123
+  n_shots: 2000   # Jumlah bitstring yang disampel

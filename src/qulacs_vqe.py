@@ -97,9 +97,12 @@ def run_hva_vqe(K, g, gamma_tf=0.2, depth=2, seed=123):
     obs = build_observable(K, g, gamma_tf=gamma_tf)
 
     x0 = rng.uniform(low=-0.1, high=0.1, size=2 * depth)
+    energy_history = []
 
     def objective(params):
-        return evaluate_energy_hva(params, K, g, obs)
+        energy = evaluate_energy_hva(params, K, g, obs)
+        energy_history.append(energy)
+        return energy
 
     res = minimize(
         objective,
@@ -107,13 +110,52 @@ def run_hva_vqe(K, g, gamma_tf=0.2, depth=2, seed=123):
         method="COBYLA",
         options={"maxiter": 300, "rhobeg": 0.5, "tol": 1e-4},
     )
+    res.energy_history = energy_history
     return res 
+
+def run_hea_vqe(K, g, gamma_tf=0.2, depth=2, seed=123):
+    rng = np.random.default_rng(seed)
+    m = len(g)
+    obs = build_observable(K, g, gamma_tf=gamma_tf)
+
+    # HEA parameters count: m for initial layer, then 2*m per depth layer
+    num_params = m + 2 * m * depth
+    x0 = rng.uniform(low=-np.pi, high=np.pi, size=num_params)
+    energy_history = []
+
+    def objective(params):
+        energy = evaluate_energy_hea(params, m, depth, obs)
+        energy_history.append(energy)
+        return energy
+
+    res = minimize(
+        objective,
+        x0,
+        method="COBYLA",
+        options={"maxiter": 300, "rhobeg": 0.5, "tol": 1e-4},
+    )
+    res.energy_history = energy_history
+    return res
 
 def sample_hva_portfolios(K, g, params, n_shots=2000):
     m = len(g)
     state = QuantumState(m)
     state.set_zero_state()
     circuit = build_hva_circuit(K, g, params)
+    circuit.update_quantum_state(state)
+
+    samples = state.sampling(n_shots)
+    X = np.zeros((n_shots, m), dtype=int)
+    for r, integer_sample in enumerate(samples):
+        for k in range(m):
+            X[r, k] = (integer_sample >> k) & 1
+    return X
+
+def sample_hea_portfolios(K, g, params, depth, n_shots=2000):
+    m = len(g)
+    state = QuantumState(m)
+    state.set_zero_state()
+    circuit = build_hea_circuit(m, params, depth)
     circuit.update_quantum_state(state)
 
     samples = state.sampling(n_shots)
