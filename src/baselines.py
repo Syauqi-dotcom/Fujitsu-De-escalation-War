@@ -21,7 +21,7 @@ def local_search(x, q, Q, max_sweeps=100):
             break 
     return x
 
-def simmulated_annealing(q, Q, const=0.0, n_steps=20000, t0=1.0, tf=1e-3, seed=123):
+def simulated_annealing(q, Q, const=0.0, n_steps=20000, t0=1.0, tf=1e-3, seed=123):
     rng = np.random.default_rng(seed)
     m = len(q)
     x = rng.integers(0, 2, size=m)

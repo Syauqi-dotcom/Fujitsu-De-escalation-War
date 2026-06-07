@@ -1,0 +1,5 @@
+ps -eo pid,comm,etime,args | grep jupyter
+tail -f vqe_output.log
+python -u 03_run_vqe.py > vqe_output.log 2>&1
+
+

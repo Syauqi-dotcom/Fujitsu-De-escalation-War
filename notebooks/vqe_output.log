@@ -1,0 +1,12 @@
+Data QUBO dan Ising berhasil di-load!
+Memulai optimasi VQE...
+VQE Energy: -279.15896500748585
+
+--- Top 5 Portofolio Quantum (VQE) ---
+Rank 1 | Total Aksi: 5 | Objective: 22.6430
+Rank 2 | Total Aksi: 5 | Objective: 22.6692
+Rank 3 | Total Aksi: 5 | Objective: 22.9573
+Rank 4 | Total Aksi: 6 | Objective: 32.1208
+Rank 5 | Total Aksi: 6 | Objective: 32.2211
+
+Hasil eksekusi VQE berhasil disimpan ke pickle!

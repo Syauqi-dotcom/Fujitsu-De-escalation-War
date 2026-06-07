@@ -1,0 +1,7 @@
+Data QUBO dan hasil VQE berhasil di-load!
+
+Menjalankan Simulated Annealing...
+Menjalankan Local Search dari bitstring acak...
+VQE (Quantum Simulator) : -279.1590
+Simulated Annealing     : 22.5921
+Local Search            : 22.4586
