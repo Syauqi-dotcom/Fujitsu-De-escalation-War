@@ -1,0 +1,43 @@
+#!/bin/bash
+#SBATCH -J deesc-hva
+#SBATCH -p Batch
+#SBATCH -N 2
+#SBATCH -t 08:00:00
+#SBATCH -o logs/hva-%j.out
+#SBATCH -e logs/hva-%j.err
+
+# sim-hva.job — produksi HVA.
+# Default 2 node setelah coupling ZZ direduksi menjadi satu PauliRotation.
+# Lihat §12 HOW_TO_REMOTE_AND_MIGRATE.md.
+
+set -euo pipefail
+cd "$SLURM_SUBMIT_DIR"
+
+PROJECT_DIR="$SLURM_SUBMIT_DIR"
+QENV_DIR="$PROJECT_DIR/qenv"
+
+# ── Cek file wajib ────────────────────────────────────────────────────────────
+test -x ./remote/job.sh                         || { echo "MISSING: remote/job.sh"; exit 1; }
+test -r ./remote/run_quantum.py                  || { echo "MISSING: remote/run_quantum.py"; exit 1; }
+test -r ./notebooks/results/raw/qubo_ising_data.pkl || { echo "MISSING: notebooks/results/raw/qubo_ising_data.pkl"; exit 1; }
+test -x "$QENV_DIR/bin/python" || { echo "MISSING: $QENV_DIR/bin/python"; exit 1; }
+
+export PYTHONUNBUFFERED=1
+
+echo "job_id=$SLURM_JOB_ID"
+echo "nodes=$SLURM_JOB_NUM_NODES"
+echo "nodelist=$SLURM_JOB_NODELIST"
+
+mpirun -npernode 4 \
+  ./remote/job.sh \
+  "$QENV_DIR" \
+  "$QENV_DIR/bin/python" ./remote/run_quantum.py \
+    --input  notebooks/results/raw/qubo_ising_data.pkl \
+    --output "notebooks/results/raw/vqe-hva-${SLURM_JOB_ID}.pkl" \
+    --ansatz hva \
+    --depth  2 \
+    --qubits 30 \
+    --gamma-tf 0.2 \
+    --shots  2000 \
+    --seed   123 \
+    --maxiter 300
