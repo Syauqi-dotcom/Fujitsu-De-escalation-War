@@ -38,11 +38,12 @@ def plot_risk_vs_budget(portfolios_data: List[Dict], save_path: str = None):
         plt.savefig(save_path, dpi=300)
     plt.show()
 
-def plot_scenario_robustness_boxplot(syauqi_portfolio_risks: np.ndarray, baseline_risks: np.ndarray, save_path: str = None):
+def plot_scenario_robustness_boxplot(vqe_portfolio_risks: np.ndarray, baseline_risks: np.ndarray, save_path: str = None):
     """
-    Membuat boxplot untuk membandingkan robustness antar skenario stres.
+    Membandingkan distribusi risiko portofolio VQE dan baseline klasik
+    pada seluruh skenario stres.
     """
-    data = [baseline_risks, syauqi_portfolio_risks]
+    data = [baseline_risks, vqe_portfolio_risks]
     labels = ["Classical Baseline", "VQE Portfolio"]
     
     plt.figure(figsize=(7, 5))

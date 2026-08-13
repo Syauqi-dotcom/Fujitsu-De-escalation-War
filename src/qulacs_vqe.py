@@ -1,8 +1,35 @@
-# from types import _ReturnT_co
+import numpy as np
+
+# MPI harus diinisialisasi sebelum Qulacs ketika proses memakai mpiQulacs.
+try:
+    from mpi4py import MPI as _MPI
+    _comm = _MPI.COMM_WORLD
+    MPI_RANK = _comm.Get_rank()
+    MPI_SIZE = _comm.Get_size()
+except ImportError:
+    _MPI = None
+    MPI_RANK = 0
+    MPI_SIZE = 1
+
 from qulacs import Observable, QuantumCircuit, QuantumState
 from scipy.optimize import minimize
+
 from src.qubo import qubo_value
-import numpy as np
+
+HAS_NATIVE_ZZ_ROTATION = hasattr(
+    QuantumCircuit, "add_multi_Pauli_rotation_gate"
+)
+
+# Qulacs lokal tetap memakai state CPU biasa; mpiQulacs mengaktifkan state
+# terdistribusi hanya ketika proses memang dijalankan dalam communicator MPI.
+_USE_MULTI_CPU = _MPI is not None and MPI_SIZE > 1
+
+
+def _new_state(n_qubits):
+    if _USE_MULTI_CPU:
+        return QuantumState(n_qubits, use_multi_cpu=True)
+    return QuantumState(n_qubits)
+
 
 def build_observable(K, g, gamma_tf=0.0):
     m = len(g)
@@ -45,20 +72,24 @@ def build_hva_circuit(K, g, params):
         
         for k in range(m):
             for ell in range(k+1, m):
-                angle = 2.0 * beta * K[k, ell]
+                angle = 2.0 * gamma * K[k, ell]
                 if abs(angle) > 1e-14:
-                    circuit.add_CNOT_gate(k, ell)
-                    circuit.add_RZ_gate(ell, angle)
-                    circuit.add_CNOT_gate(k, ell)
+                    if HAS_NATIVE_ZZ_ROTATION:
+                        circuit.add_multi_Pauli_rotation_gate(
+                            [k, ell], [3, 3], angle
+                        )
+                    else:
+                        circuit.add_CNOT_gate(k, ell)
+                        circuit.add_RZ_gate(ell, angle)
+                        circuit.add_CNOT_gate(k, ell)
         
         for k in range(m):
             circuit.add_RX_gate(k, 2.0 * beta)
     
     return circuit
         
-def evaluate_energy_hva(params, K, g, observable):
-    m = len(g)
-    state = QuantumState(m)
+def evaluate_energy_hva(params, K, g, observable, state=None):
+    state = _new_state(len(g)) if state is None else state
     state.set_zero_state()
     circuit = build_hva_circuit(K, g, params)
     circuit.update_quantum_state(state)
@@ -85,8 +116,8 @@ def build_hea_circuit(m, params, depth):
     
     return circuit
     
-def evaluate_energy_hea(params, m, depth, observable):
-    state = QuantumState(m)
+def evaluate_energy_hea(params, m, depth, observable, state=None):
+    state = _new_state(m) if state is None else state
     state.set_zero_state()
     circuit = build_hea_circuit(m, params, depth)
     circuit.update_quantum_state(state)
@@ -98,9 +129,10 @@ def run_hva_vqe(K, g, gamma_tf=0.2, depth=2, seed=123):
 
     x0 = rng.uniform(low=-0.1, high=0.1, size=2 * depth)
     energy_history = []
+    state = _new_state(len(g))
 
     def objective(params):
-        energy = evaluate_energy_hva(params, K, g, obs)
+        energy = evaluate_energy_hva(params, K, g, obs, state=state)
         energy_history.append(energy)
         return energy
 
@@ -122,9 +154,10 @@ def run_hea_vqe(K, g, gamma_tf=0.2, depth=2, seed=123):
     num_params = m + 2 * m * depth
     x0 = rng.uniform(low=-np.pi, high=np.pi, size=num_params)
     energy_history = []
+    state = _new_state(m)
 
     def objective(params):
-        energy = evaluate_energy_hea(params, m, depth, obs)
+        energy = evaluate_energy_hea(params, m, depth, obs, state=state)
         energy_history.append(energy)
         return energy
 
@@ -137,33 +170,38 @@ def run_hea_vqe(K, g, gamma_tf=0.2, depth=2, seed=123):
     res.energy_history = energy_history
     return res
 
-def sample_hva_portfolios(K, g, params, n_shots=2000):
+
+def _decode_samples(integer_samples, n_qubits):
+    encoded = np.asarray(integer_samples, dtype=np.uint64)[:, None]
+    bit_positions = np.arange(n_qubits, dtype=np.uint64)[None, :]
+    return ((encoded >> bit_positions) & 1).astype(np.int8)
+
+
+def sample_hva_portfolios(K, g, params, n_shots=2000, seed=123):
     m = len(g)
-    state = QuantumState(m)
+    # §7.2: semua state remote memakai use_multi_cpu=True melalui _new_state
+    # §7.4: semua rank harus memanggil sampling (jangan dibungkus if rank==0)
+    state = _new_state(m)
     state.set_zero_state()
     circuit = build_hva_circuit(K, g, params)
     circuit.update_quantum_state(state)
 
-    samples = state.sampling(n_shots)
-    X = np.zeros((n_shots, m), dtype=int)
-    for r, integer_sample in enumerate(samples):
-        for k in range(m):
-            X[r, k] = (integer_sample >> k) & 1
-    return X
+    # §7.5: sampling harus punya seed agar reproducible
+    samples = state.sampling(n_shots, seed)
+    return _decode_samples(samples, m)
 
-def sample_hea_portfolios(K, g, params, depth, n_shots=2000):
+def sample_hea_portfolios(K, g, params, depth, n_shots=2000, seed=123):
     m = len(g)
-    state = QuantumState(m)
+    # §7.2: semua state remote memakai use_multi_cpu=True melalui _new_state
+    # §7.4: semua rank harus memanggil sampling (jangan dibungkus if rank==0)
+    state = _new_state(m)
     state.set_zero_state()
     circuit = build_hea_circuit(m, params, depth)
     circuit.update_quantum_state(state)
 
-    samples = state.sampling(n_shots)
-    X = np.zeros((n_shots, m), dtype=int)
-    for r, integer_sample in enumerate(samples):
-        for k in range(m):
-            X[r, k] = (integer_sample >> k) & 1
-    return X
+    # §7.5: sampling harus punya seed agar reproducible
+    samples = state.sampling(n_shots, seed)
+    return _decode_samples(samples, m)
 
 def best_sampled_portfolios(samples, q, Q, const=0.0, top_k=10):
     unique = {}

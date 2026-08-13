@@ -1,23 +1,29 @@
 import numpy as np
 from typing import List, Dict, Union
 
-def calculate_budget(syauqi_portfolio: np.ndarray, costs: np.ndarray) -> float:
+def calculate_budget(action_selection: np.ndarray, costs: np.ndarray) -> float:
     """
-    Menghitung total biaya dari aksi yang dipilih (Persamaan 1).
-    """
-    return float(np.sum(costs * syauqi_portfolio))
+    Menghitung total biaya dari vektor keputusan biner aksi.
 
-def calculate_selected_actions(syauqi_portfolio: np.ndarray) -> int:
+    ``action_selection[k] = 1`` jika aksi ke-k dipilih, dan 0 jika tidak.
     """
-    Menghitung jumlah aksi de-eskalasi yang diaktifkan (Persamaan 5).
-    """
-    return int(np.sum(syauqi_portfolio))
+    return float(np.sum(costs * action_selection))
 
-def calculate_scenario_risks(syauqi_portfolio: np.ndarray, scenarios: List[Dict], alpha: np.ndarray) -> np.ndarray:
+def calculate_selected_actions(action_selection: np.ndarray) -> int:
     """
-    Menghitung r_s(x) atau risiko residual untuk setiap skenario s.
+    Menghitung jumlah aksi de-eskalasi yang dipilih.
+
+    ``action_selection`` adalah vektor keputusan biner x dengan x_k ∈ {0, 1}.
     """
-    m = len(syauqi_portfolio)
+    return int(np.sum(action_selection))
+
+def calculate_scenario_risks(action_selection: np.ndarray, scenarios: List[Dict], alpha: np.ndarray) -> np.ndarray:
+    """
+    Menghitung risiko residual r_s(x) untuk setiap skenario s.
+
+    ``action_selection`` merepresentasikan vektor keputusan biner x.
+    """
+    m = len(action_selection)
     risks = []
     
     for sc in scenarios:
@@ -32,7 +38,7 @@ def calculate_scenario_risks(syauqi_portfolio: np.ndarray, scenarios: List[Dict]
                 # Menghitung efek reduksi dari portofolio terhadap edge (i, j)
                 diminishing_factor = 1.0
                 for k in range(m):
-                    if syauqi_portfolio[k] == 1:
+                    if action_selection[k] == 1:
                         diminishing_factor *= (1.0 - alpha[k, i, j])
                 
                 r_s += T[i, j] * diminishing_factor
@@ -40,11 +46,13 @@ def calculate_scenario_risks(syauqi_portfolio: np.ndarray, scenarios: List[Dict]
         
     return np.array(risks)
 
-def evaluate_robustness(syauqi_portfolio: np.ndarray, scenarios: List[Dict], alpha: np.ndarray) -> Dict[str, float]:
+def evaluate_robustness(action_selection: np.ndarray, scenarios: List[Dict], alpha: np.ndarray) -> Dict[str, float]:
     """
-    Menghitung MeanRisk, WorstRisk, dan RiskStd lintas skenario (Persamaan 6 & 7).
+    Menghitung mean risk, worst-case risk, dan simpangan baku lintas skenario.
+
+    ``action_selection`` merepresentasikan vektor keputusan biner x.
     """
-    risks = calculate_scenario_risks(syauqi_portfolio, scenarios, alpha)
+    risks = calculate_scenario_risks(action_selection, scenarios, alpha)
     weights = np.array([sc["weight"] for sc in scenarios])
     
     mean_risk = np.sum(weights * risks)
@@ -61,6 +69,6 @@ def evaluate_robustness(syauqi_portfolio: np.ndarray, scenarios: List[Dict], alp
 
 def calculate_optimality_gap(f_alg: float, f_exact_optimum: float) -> float:
     """
-    Menghitung relative optimality gap (Bagian 10.4).
+    Menghitung relative optimality gap.
     """
     return (f_alg - f_exact_optimum) / (abs(f_exact_optimum) + 1e-12)
